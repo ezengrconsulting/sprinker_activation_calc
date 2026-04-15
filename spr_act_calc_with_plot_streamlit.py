@@ -70,27 +70,29 @@ if st.button("🚀 開始計算模擬"):
         # 1. 執行排煙計算
         q_design, t_smoke, v_total, v_max_grill = calculate_smoke_extraction(q_act, sf, z_clear, h, t_amb)
         
-        # 2. 顯示文字結果指標
+        # 2. 顯示結果指標
         st.subheader("✅ 模擬與排煙計算結果")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("噴頭啟動時間", f"{act_time:.1f} s")
-        c2.metric("設計火災規模 (Q_design)", f"{q_design:.2f} kW")
-        c3.metric("總排煙量需求", f"{v_total:.2f} m³/s")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("啟動時間", f"{act_time:.1f} s")
+        col2.metric("啟動時規模 (Q_act)", f"{q_act:.2f} kW")
+        col3.metric("設計規模 (Q_design)*", f"{q_design:.2f} kW")
+        col4.metric("總排煙量需求", f"{v_total:.2f} m³/s")
+        
+        st.caption(f"*註：設計火災規模 (Q_design) 已計入安全係數 (SF = {sf})")
 
-        # 3. 顯示詳細排煙數據
+        # 3. 詳細數據區塊
         res_col1, res_col2 = st.columns(2)
         with res_col1:
             st.info(f"""
-            **排煙參數：**
-            - 啟動瞬間規模 (Q_act): {q_act:.2f} kW
+            **排煙系統參數：**
             - 預估煙層溫度: {t_smoke:.2f} °C
             - 每小時排煙量: {round(v_total * 3600, 1)} m³/hr
             """)
         with res_col2:
             num_vents = math.ceil(v_total / v_max_grill) if v_max_grill > 0 else 1
             st.warning(f"""
-            **排煙口設置：**
-            - 單個排煙口限值: {v_max_grill:.2f} m³/s
+            **排煙口設計：**
+            - 單個排煙口限值 (防吸空): {v_max_grill:.2f} m³/s
             - **建議最少排煙口數量: {num_vents} 個**
             """)
 
@@ -101,16 +103,20 @@ if st.button("🚀 開始計算模擬"):
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.plot(times, hrr_list, 'r-', linewidth=2.5, label='Heat Release Rate (kW)')
         
-        # 標註啟動點
+        # 標註啟動點與數值
         ax.axvline(x=act_time, color='gray', linestyle='--', alpha=0.6)
         ax.scatter([act_time], [q_act], color='red', zorder=5)
-        ax.text(act_time + 20, q_act * 0.9, f'Activation: {act_time:.0f}s', fontsize=10, fontweight='bold')
+        
+        # 在圖表上顯示數值標籤
+        ax.text(act_time + 15, q_act * 0.95, 
+                f'Activation: {act_time:.1f}s\nQ_act: {q_act:.1f} kW', 
+                fontsize=10, fontweight='bold', bbox=dict(facecolor='white', alpha=0.7))
         
         # 圖表設定
         ax.set_xlabel('Time (s)')
         ax.set_ylabel('HRR (kW)')
-        ax.set_ylim(bottom=0) # Y 軸從 0 開始
-        ax.set_xlim(0, 1200) # X 軸到 1200 秒
+        ax.set_ylim(bottom=0) # 強制 Y 軸從 0 開始
+        ax.set_xlim(0, 1200) # 強制 X 軸到 1200 秒
         ax.grid(True, which='both', linestyle='--', alpha=0.5)
         ax.legend()
         
